@@ -1,11 +1,12 @@
-import customtkinter
-from customtkinter import filedialog
-import ctypes
+import tkinter
 import os
-from CTkMessagebox import CTkMessagebox
+import json
+import ctypes
 
-# Needed data
-class cod_settings:
+from tkinter import filedialog
+from tkinter import messagebox 
+
+class cod_settings:    
     home_directory = os.path.expanduser("~")
     cod_path = os.path.join(home_directory, "Documents", "Call of Duty", "players", "s.1.0.cod24.txt")
     
@@ -14,60 +15,66 @@ class cod_settings:
     resolution = "Resolution@0;56178;35888 = "
 
 # Application GUI
-class App(customtkinter.CTk):
-    customtkinter.set_appearance_mode("dark")
-    customtkinter.set_default_color_theme("green") 
-
+class Application(tkinter.Tk):
     def __init__(self):
         super().__init__()
 
-        self.title("QR")
-        self.geometry(f"{310}x{240}")
+        with open("config.json", "r") as file:
+            self.config = json.load(file)
+
+        self.title("QuickRes") 
+        self.frame = tkinter.Frame(self)
+        self.frame.pack()
+
+        # Resolution widgets
+        self.resolution_frame = tkinter.LabelFrame(self.frame, text="Resolution")
+        self.resolution_frame.grid(row=0, column=0, padx=20, pady=20)
+        self.resolution_x_label = tkinter.Label(self.resolution_frame, text="X Resolution")
+        self.resolution_x_label.grid(row=0, column=0)
+        self.resolution_y_label = tkinter.Label(self.resolution_frame, text="Y Resolution")
+        self.resolution_y_label.grid(row=0, column=1)
+        self.resolution_x_input = tkinter.Entry(self.resolution_frame)
+        self.resolution_y_input = tkinter.Entry(self.resolution_frame)
+        self.resolution_x_input.grid(row=1, column=0)
+        self.resolution_y_input.grid(row=1, column=1)    
+        self.apply_resolution_btn = tkinter.Button(self.resolution_frame, text="Apply", command=self.set_cod_res)
+        self.apply_resolution_btn.grid(row=1, column=2)
+        for widget in self.resolution_frame.winfo_children():
+            widget.grid_configure(padx=5, pady=5)
+            
+        # File path widgets
+        self.filepath_frame = tkinter.LabelFrame(self.frame, text="File Path")
+        self.filepath_frame.grid(row=0, column=1, padx=20, pady=5)
+        self.filepath_location_label = tkinter.Label(self.filepath_frame, text="Call of Duty File Path")
+        self.filepath_location_label.grid(row=0, column=0)
+        self.filepath_location_input = tkinter.Entry(self.filepath_frame, width=50)
+        self.filepath_location_input.grid(row=1, column=0)
+        if self.config['file_path'] == "":
+            if os.path.exists(cod_settings.cod_path):
+                self.filepath_location_input.insert(0, f"{cod_settings.cod_path}")
+            else:
+                messagebox.showwarning("QuickRes", "We couldn't find the correct Call of Duty file path! Please enter it manually.")
+        else:
+            self.filepath_location_input.insert(0, f"{self.config['file_path']}")
+        self.filepath_change_button = tkinter.Button(self.filepath_frame, text="Change", command= self.change_path)
+        self.filepath_change_button.grid(row=1, column=1)
+        for widget in self.filepath_frame.winfo_children():
+            widget.grid_configure(padx=5, pady=5)
+
+    def change_path(self):
+        self.filepath_location_input.delete(0, "end") 
+        new_file_path = filedialog.askopenfilename()
+        self.config['file_path'] = new_file_path
+        with open ("config.json", "w") as file:
+            json.dump(self.config, file, indent=4)
+            self.filepath_location_input.insert(0, f"{self.config['file_path']}")
         
-        self.watermark_label = customtkinter.CTkLabel(master=self, text=cod_settings.cod_path, font=("Roboto", 9), text_color="#383838")
-        self.watermark_label.place(relx=0.5, rely=0.05, anchor="center")
-
-        self.title_label = customtkinter.CTkLabel(master=self, text="QuickRes", font=("Roboto", 20))
-        self.title_label.place(relx=0.5, rely=0.2, anchor="center")
-
-        self.title_label_desc = customtkinter.CTkLabel(master=self, text="Custom resolutions made easy", font=("Roboto", 10))
-        self.title_label_desc.place(relx=0.5, rely=0.3, anchor="center")
-        
-        self.test = customtkinter.CTkLabel(master=self, text="X", font=("Roboto", 10))
-        self.test.place(relx=0.5, rely=0.485, anchor="center")
-
-        self.x_res_input = customtkinter.CTkTextbox(master=self, corner_radius=5, width=60, height=1)
-        self.x_res_input.place(relx=0.37, rely=0.48, anchor="center")
-        self.x_res_input.insert("0.0", "1920")
-
-        self.y_res_input = customtkinter.CTkTextbox(master=self, corner_radius=5, width=60, height=1)
-        self.y_res_input.place(relx=0.63, rely=0.48, anchor="center")
-        self.y_res_input.insert("0.0", "1080")
-
-        displaytype_var = customtkinter.StringVar(value="Fullscreen")
-        self.displaytype_combo = customtkinter.CTkComboBox(master=self, values=["Fullscreen", "Fullscreen borderless window"], corner_radius=5, height=22, variable=displaytype_var)
-        self.displaytype_combo.place(relx=0.5, rely=0.6, anchor="center")
-
-        self.apply_res_btn = customtkinter.CTkButton(master=self, text="Apply", corner_radius=5, height=22, command = cod.apply_settings)
-        self.apply_res_btn.place(relx = 0.5, rely = 0.71, anchor="center")
-
-        self.watermark_label = customtkinter.CTkLabel(master=self, text="Developed by boog <3", font=("Roboto", 10), text_color="#383838")
-        self.watermark_label.place(relx=0.17, rely=0.97, anchor="center")
-        self.version_label = customtkinter.CTkLabel(master=self, text="v1.0.1", font=("Roboto", 10), text_color="#383838")
-        self.version_label.place(relx=0.94, rely=0.97, anchor="center")
-
-# COD settings functions
-class cod:
-    def apply_settings():
-        cod.set_res()
-        cod.set_displaytype()
-        CTkMessagebox(message="Settings have been applied.", icon="check", option_1="Okay")
-
-    def set_res():
-        x = app.x_res_input.get("0.0", "end")
-        y = app.y_res_input.get("0.0", "end")
+    def set_cod_res(self):
+        x = self.resolution_x_input.get()
+        y = self.resolution_y_input.get()
         x = x.strip()
         y = y.strip()
+        
         if x == "1920" and y == "1080": 
             aspect_ratio_text_replacement = cod_settings.aspectratio + "auto"
         else:
@@ -78,11 +85,8 @@ class cod:
         windows.edit_txt(cod_settings.cod_path, cod_settings.resolution, resolution_text_replacement)
         windows.set_monitor_res(int(x), int(y))
 
-    def set_displaytype():
-        displaymode_text_replacement = cod_settings.displaymode + f" = {app.displaytype_combo.get()}"
-        windows.edit_txt(cod_settings.cod_path, cod_settings.displaymode, displaymode_text_replacement)
+        messagebox.showinfo("QuickRes", f"Resolution has been changed to {x}x{y}!")
 
-# Windows functions (thank you chat-gpt for the monitor res function <3)
 class windows:
     def set_monitor_res(width, height):
         class DEVMODE(ctypes.Structure):
@@ -132,7 +136,7 @@ class windows:
         if result == DISP_CHANGE_SUCCESSFUL:
             ctypes.windll.user32.ChangeDisplaySettingsW(ctypes.byref(dm), CDS_UPDATEREGISTRY)
         else:
-            CTkMessagebox(title="Error", message=f"Could not change screen resolution! ", icon="cancel")
+            messagebox.showerror("QuickRes", "We could not change your screeb resolution!")            
 
     def edit_txt(file_path, search_text, replacement_text):
         try:
@@ -147,11 +151,10 @@ class windows:
             with open(file_path, 'w') as file:
                 file.writelines(modified_lines)
         except FileNotFoundError:
-            CTkMessagebox(title="Error", message="Could not find path.", icon="cancel")
+            messagebox.showerror("QuickRes", "Could not find the file!")
         except Exception as e:
-            CTkMessagebox(title="Error", message=f"Their was an error! {e}", icon="cancel")
+            messagebox.showerror("QuickRes", f"{e}")
     
-
 if __name__ == "__main__":
-    app = App()
-    app.mainloop()
+    App = Application()
+    App.mainloop()
